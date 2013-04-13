@@ -1,0 +1,2 @@
+include(":ioc-container")
+include(":demo")
