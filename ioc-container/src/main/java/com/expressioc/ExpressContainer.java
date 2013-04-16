@@ -1,10 +1,10 @@
 package com.expressioc;
 
-import com.expressioc.movie.FooMovieFinder;
-import com.expressioc.movie.MovieFinder;
+import com.expressioc.exception.CycleDependencyException;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 
 public class ExpressContainer implements Container{
@@ -13,6 +13,8 @@ public class ExpressContainer implements Container{
     private ConfigurationLoader loader;
     private Map<Class, Class> implementationsMap = new HashMap<Class, Class>();
     private Map<Class, Object> instancesMap = new HashMap<Class, Object>();
+
+    private Set<Class> classesUnderConstruct = new HashSet<Class>();
 
     public Container getParent() {
         return parent;
@@ -24,6 +26,11 @@ public class ExpressContainer implements Container{
 
     @Override
     public <T> T getComponent(Class<T> clazz) {
+        this.classesUnderConstruct.clear();
+        return doGetComponent(clazz);
+    }
+
+    private <T> T doGetComponent(Class<T> clazz) {
         Object targetInstance = instancesMap.get(clazz);
         if (targetInstance != null) {
             return (T) targetInstance;
@@ -31,26 +38,46 @@ public class ExpressContainer implements Container{
 
         Class concreteClass = implementationsMap.get(clazz);
         Class targetClass = concreteClass == null ? clazz : concreteClass;
+
+        if (classesUnderConstruct.contains(targetClass)) {
+            throw new CycleDependencyException();
+        }
+
+        classesUnderConstruct.add(targetClass);
+
         Constructor<T>[] constructors = getConstructorsSortedByArgsCount(targetClass);
 
         for (Constructor<T> constructor : constructors) {
             T instance = null;
             try {
                 instance = getComponentBy(constructor);
-            } catch (InvocationTargetException e) {
-                e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-            } catch (InstantiationException e) {
-                e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+                injectComponentBySetter(instance);
+            } catch (Exception e) {
             }
 
             if (instance != null) {
+                classesUnderConstruct.remove(targetClass);
                 return instance;
             }
         }
 
         throw new NullPointerException();
+    }
+
+    private <T> T injectComponentBySetter(T instance) throws InvocationTargetException, IllegalAccessException {
+        Method[] clazzMethods = instance.getClass().getMethods();
+        for (Method method : clazzMethods) {
+            if (isSetterMethod(method)) {
+                method.invoke(instance, resolveObjects(method.getParameterTypes()));
+            }
+        }
+
+        return instance;
+    }
+
+    private boolean isSetterMethod(Method method) {
+        //TODO: refactor to using regex
+        return method.getName().startsWith("set");
     }
 
     private <T> T getComponentBy(Constructor<T> constructor) throws InvocationTargetException, IllegalAccessException, InstantiationException {
@@ -60,12 +87,16 @@ public class ExpressContainer implements Container{
             return constructor.newInstance();
         }
 
+        return constructor.newInstance(resolveObjects(parameterTypes));
+    }
+
+    private Object[] resolveObjects(Class[] parameterTypes) {
         ArrayList params = new ArrayList(parameterTypes.length);
         for (Class paramClazz : parameterTypes) {
-            params.add(getComponent(paramClazz));
+            params.add(doGetComponent(paramClazz));
         }
 
-        return constructor.newInstance(params.toArray());
+        return params.toArray();
     }
 
     private <T> Constructor<T>[] getConstructorsSortedByArgsCount(Class<T> clazz) {
@@ -80,11 +111,11 @@ public class ExpressContainer implements Container{
         return constructors;
     }
 
-    public void addComponent(Class<MovieFinder> interfaceClazz, Class<FooMovieFinder> implClazz) {
+    public void addComponent(Class interfaceClazz, Class implClazz) {
         implementationsMap.put(interfaceClazz, implClazz);
     }
 
-    public void addComponent(Class<MovieFinder> interfaceClazz, Object instance) {
+    public void addComponent(Class interfaceClazz, Object instance) {
         instancesMap.put(interfaceClazz, instance);
     }
 }

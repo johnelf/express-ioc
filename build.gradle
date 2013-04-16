@@ -1,7 +1,6 @@
 allprojects {
     apply plugin: 'idea'
     apply plugin: 'java'
-    apply plugin: 'templates'
 
     repositories {
         mavenCentral()

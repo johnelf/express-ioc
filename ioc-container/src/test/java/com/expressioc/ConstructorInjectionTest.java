@@ -1,8 +1,7 @@
 package com.expressioc;
 
-import com.expressioc.movie.FooMovieFinder;
-import com.expressioc.movie.MovieFinder;
-import com.expressioc.movie.MovieLister;
+import com.expressioc.exception.CycleDependencyException;
+import com.expressioc.movie.*;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -44,4 +43,29 @@ public class ConstructorInjectionTest {
         MovieLister instance = container.getComponent(MovieLister.class);
         assertThat(instance.getMovieFinder() == movieFinder, is(true));
     }
+
+    @Test(expected = CycleDependencyException.class)
+    public void should_throw_exception_when_cycle_dependency_happens() {
+        container.addComponent(MovieFinder.class, CycleDependentMovieFinderA.class);
+        container.getComponent(MovieFinder.class);
+    }
+
+    @Test(expected = CycleDependencyException.class)
+    public void should_throw_exception_when_cycle_dependency_happens_in_two_classes() {
+        container.addComponent(MovieFinder.class, MovieFinderImplDependOnDirectorFinder.class);
+        container.addComponent(DirectorFinder.class, DirectorFinderImplDependOnMovieFinder.class);
+        container.getComponent(MovieFinder.class);
+    }
+
+    @Test
+    public void should_use_setter_injection_to_inject_implementation() {
+        container.addComponent(MovieFinder.class, FooMovieFinder.class);
+        FooMovieLister instance = container.getComponent(FooMovieLister.class);
+
+        assertThat(instance.getMovieFinder(), is(FooMovieFinder.class));
+    }
+
+    //TODO: how to fix set again after construction.
+    //TODO: make a cache, so a second get can get a previously created object
+    //TODO: init container with package name, and init with annotations in specified package.
 }
