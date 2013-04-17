@@ -6,10 +6,6 @@ import java.util.List;
 public class MovieLister {
     private MovieFinder movieFinder;
 
-    public void setMovieFinder(MovieFinder movieFinder) {
-        this.movieFinder = movieFinder;
-    }
-
     public MovieLister() {
     }
 

@@ -17,6 +17,7 @@ public class ConstructorInjectionTest {
     @Before
     public void setUp() {
         container = new ExpressContainer();
+        container.setParent(null);
     }
 
     @Test
@@ -62,6 +63,17 @@ public class ConstructorInjectionTest {
         container.addComponent(MovieFinder.class, FooMovieFinder.class);
         FooMovieLister instance = container.getComponent(FooMovieLister.class);
 
+        assertThat(instance.getMovieFinder(), is(FooMovieFinder.class));
+    }
+
+    @Test
+    public void should_get_dependency_from_parent_container() {
+        ExpressContainer parentContainer = new ExpressContainer();
+        parentContainer.addComponent(MovieFinder.class, FooMovieFinder.class);
+        container.setParent(parentContainer);
+
+        MovieLister instance = container.getComponent(MovieLister.class);
+        assertThat(instance instanceof MovieLister, is(true));
         assertThat(instance.getMovieFinder(), is(FooMovieFinder.class));
     }
 

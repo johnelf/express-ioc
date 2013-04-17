@@ -8,7 +8,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 public class ExpressContainer implements Container{
-    private Container parent;
+    private ExpressContainer parent;
     private BeanFactory beanCreator;
     private ConfigurationLoader loader;
     private Map<Class, Class> implementationsMap = new HashMap<Class, Class>();
@@ -16,11 +16,15 @@ public class ExpressContainer implements Container{
 
     private Set<Class> classesUnderConstruct = new HashSet<Class>();
 
-    public Container getParent() {
+    public Set<Class> getClassesUnderConstruct() {
+        return classesUnderConstruct;
+    }
+
+    public ExpressContainer getParent() {
         return parent;
     }
 
-    public void setParent(Container parent) {
+    public void setParent(ExpressContainer parent) {
         this.parent = parent;
     }
 
@@ -53,12 +57,21 @@ public class ExpressContainer implements Container{
                 instance = getComponentBy(constructor);
                 injectComponentBySetter(instance);
             } catch (Exception e) {
+                if (e instanceof CycleDependencyException) {
+                    throw new CycleDependencyException();
+                }
             }
 
             if (instance != null) {
                 classesUnderConstruct.remove(targetClass);
                 return instance;
             }
+        }
+
+        if (parent != null) {
+            parent.getClassesUnderConstruct().clear();
+            parent.getClassesUnderConstruct().addAll(getClassesUnderConstruct());
+            return parent.doGetComponent(clazz);
         }
 
         throw new NullPointerException();
