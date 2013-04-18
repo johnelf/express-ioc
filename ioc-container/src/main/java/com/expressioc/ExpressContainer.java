@@ -1,5 +1,6 @@
 package com.expressioc;
 
+import com.expressioc.exception.AssembleComponentFailedException;
 import com.expressioc.exception.CycleDependencyException;
 
 import java.lang.reflect.Constructor;
@@ -9,8 +10,6 @@ import java.util.*;
 
 public class ExpressContainer implements Container{
     private ExpressContainer parent;
-    private BeanFactory beanCreator;
-    private ConfigurationLoader loader;
     private Map<Class, Class> implementationsMap = new HashMap<Class, Class>();
     private Map<Class, Object> instancesMap = new HashMap<Class, Object>();
 
@@ -56,10 +55,9 @@ public class ExpressContainer implements Container{
             try {
                 instance = getComponentBy(constructor);
                 injectComponentBySetter(instance);
+            } catch (CycleDependencyException e) {
+                throw new CycleDependencyException();
             } catch (Exception e) {
-                if (e instanceof CycleDependencyException) {
-                    throw new CycleDependencyException();
-                }
             }
 
             if (instance != null) {
@@ -74,7 +72,7 @@ public class ExpressContainer implements Container{
             return parent.doGetComponent(clazz);
         }
 
-        throw new NullPointerException();
+        throw new AssembleComponentFailedException();
     }
 
     private <T> T injectComponentBySetter(T instance) throws InvocationTargetException, IllegalAccessException {
