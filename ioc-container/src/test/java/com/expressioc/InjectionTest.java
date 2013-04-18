@@ -90,7 +90,7 @@ public class InjectionTest {
     public void should_throw_assemble_exception_when_dependency_not_exist_in_parent_container() {
         container.setParent(new ExpressContainer());
 
-        IA_As_ConstructorArg instance = container.getComponent(IA_As_ConstructorArg.class);
+        container.getComponent(IA_As_ConstructorArg.class);
     }
 
 
