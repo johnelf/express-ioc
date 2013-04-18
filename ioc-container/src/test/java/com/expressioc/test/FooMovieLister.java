@@ -1,4 +1,4 @@
-package com.expressioc.movie;
+package com.expressioc.test;
 
 public class FooMovieLister {
     private MovieFinder movieFinder;

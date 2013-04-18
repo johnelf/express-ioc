@@ -1,4 +1,4 @@
-package com.expressioc.movie;
+package com.expressioc.test;
 
 import java.util.ArrayList;
 import java.util.List;

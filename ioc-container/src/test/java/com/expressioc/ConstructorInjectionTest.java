@@ -1,7 +1,7 @@
 package com.expressioc;
 
 import com.expressioc.exception.CycleDependencyException;
-import com.expressioc.movie.*;
+import com.expressioc.test.*;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -22,40 +22,40 @@ public class ConstructorInjectionTest {
 
     @Test
     public void should_get_instance_by_default_constructor() {
-        MovieLister componentInstance = container.getComponent(MovieLister.class);
-        assertNotNull(componentInstance);
+        WithDefaultConstructor instance = container.getComponent(WithDefaultConstructor.class);
+        assertNotNull(instance);
     }
 
     @Test
     public void should_get_instance_by_constructor_with_multiple_parameters() {
-        container.addComponent(MovieFinder.class, FooMovieFinder.class);
+        container.addComponent(IA.class, IAImpl.class);
 
-        MovieLister instance = container.getComponent(MovieLister.class);
+        IA_As_ConstructorArg instance = container.getComponent(IA_As_ConstructorArg.class);
 
-        assertThat(instance instanceof MovieLister, is(true));
-        assertThat(instance.getMovieFinder(), notNullValue());
+        assertThat(instance instanceof IA_As_ConstructorArg, is(true));
+        assertThat(instance.getInterfaceA(), notNullValue());
     }
 
     @Test
     public void should_inject_instance_to_constructor() {
-        FooMovieFinder movieFinder = new FooMovieFinder();
-        container.addComponent(MovieFinder.class, movieFinder);
+        IA interfaceAImplInstance = new IAImpl();
+        container.addComponent(IA.class, interfaceAImplInstance);
 
-        MovieLister instance = container.getComponent(MovieLister.class);
-        assertThat(instance.getMovieFinder() == movieFinder, is(true));
+        IA_As_ConstructorArg instance = container.getComponent(IA_As_ConstructorArg.class);
+        assertThat(instance.getInterfaceA() == interfaceAImplInstance, is(true));
     }
 
     @Test(expected = CycleDependencyException.class)
     public void should_throw_exception_when_cycle_dependency_happens() {
-        container.addComponent(MovieFinder.class, CycleDependentMovieFinderA.class);
-        container.getComponent(MovieFinder.class);
+        container.addComponent(IA.class, IAImpl_Cycle_Dependent.class);
+        container.getComponent(IA.class);
     }
 
     @Test(expected = CycleDependencyException.class)
     public void should_throw_exception_when_cycle_dependency_happens_in_two_classes() {
-        container.addComponent(MovieFinder.class, MovieFinderImplDependOnDirectorFinder.class);
-        container.addComponent(DirectorFinder.class, DirectorFinderImplDependOnMovieFinder.class);
-        container.getComponent(MovieFinder.class);
+        container.addComponent(IA.class, IA_ImplDependsOn_IB.class);
+        container.addComponent(IB.class, IB_ImplDependsOn_IA.class);
+        container.getComponent(IA.class);
     }
 
     @Test

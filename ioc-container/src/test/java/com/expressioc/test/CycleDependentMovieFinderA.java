@@ -1,4 +1,4 @@
-package com.expressioc.movie;
+package com.expressioc.test;
 
 import java.util.List;
 
@@ -11,6 +11,6 @@ public class CycleDependentMovieFinderA implements MovieFinder {
 
     @Override
     public List<Movie> findAll() {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
+        return null;
     }
 }
