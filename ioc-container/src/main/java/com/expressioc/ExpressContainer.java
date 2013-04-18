@@ -9,19 +9,10 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 public class ExpressContainer implements Container{
-    private ExpressContainer parent;
+    private Container parent;
     private Map<Class, Class> implementationsMap = new HashMap<Class, Class>();
     private Map<Class, Object> instancesMap = new HashMap<Class, Object>();
-
     private Set<Class> classesUnderConstruct = new HashSet<Class>();
-
-    public Set<Class> getClassesUnderConstruct() {
-        return classesUnderConstruct;
-    }
-
-    public ExpressContainer getParent() {
-        return parent;
-    }
 
     public void setParent(ExpressContainer parent) {
         this.parent = parent;
@@ -49,7 +40,6 @@ public class ExpressContainer implements Container{
         classesUnderConstruct.add(targetClass);
 
         Constructor<T>[] constructors = getConstructorsSortedByArgsCount(targetClass);
-
         for (Constructor<T> constructor : constructors) {
             T instance = null;
             try {
@@ -67,9 +57,7 @@ public class ExpressContainer implements Container{
         }
 
         if (parent != null) {
-            parent.getClassesUnderConstruct().clear();
-            parent.getClassesUnderConstruct().addAll(getClassesUnderConstruct());
-            return parent.doGetComponent(clazz);
+            return parent.getComponent(clazz);
         }
 
         throw new AssembleComponentFailedException();

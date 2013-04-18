@@ -1,5 +1,6 @@
 package com.expressioc;
 
+import com.expressioc.exception.AssembleComponentFailedException;
 import com.expressioc.exception.CycleDependencyException;
 import com.expressioc.test.*;
 import org.junit.Before;
@@ -83,6 +84,13 @@ public class InjectionTest {
 
         IA_As_ConstructorArg instance = container.getComponent(IA_As_ConstructorArg.class);
         assertThat(instance.getInterfaceA(), is(IAImpl.class));
+    }
+
+    @Test(expected = AssembleComponentFailedException.class)
+    public void should_throw_assemble_exception_when_dependency_not_exist_in_parent_container() {
+        container.setParent(new ExpressContainer());
+
+        IA_As_ConstructorArg instance = container.getComponent(IA_As_ConstructorArg.class);
     }
 
     //TODO: how to fix set again after construction.
