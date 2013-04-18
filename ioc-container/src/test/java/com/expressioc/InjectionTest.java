@@ -23,7 +23,7 @@ public class InjectionTest {
 
     @Test
     public void should_get_instance_by_default_constructor() {
-        WithDefaultConstructor instance = container.getComponent(WithDefaultConstructor.class);
+        ClassWithDefaultConstructor instance = container.getComponent(ClassWithDefaultConstructor.class);
         assertNotNull(instance);
     }
 
@@ -93,7 +93,9 @@ public class InjectionTest {
         IA_As_ConstructorArg instance = container.getComponent(IA_As_ConstructorArg.class);
     }
 
+
+
+    //TODO: should inject basic type
     //TODO: how to fix set again after construction.
-    //TODO: make a cache, so a second get can get a previously created object
     //TODO: init container with package name, and init with annotations in specified package.
 }
