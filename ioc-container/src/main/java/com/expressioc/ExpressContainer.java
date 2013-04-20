@@ -2,31 +2,24 @@ package com.expressioc;
 
 import com.expressioc.exception.AssembleComponentFailedException;
 import com.expressioc.exception.CycleDependencyException;
-import com.expressioc.assembler.Assembler;
-import com.expressioc.assembler.impl.InstanceInjectionAssembler;
 import com.expressioc.processor.AssembleProcessor;
 import com.expressioc.processor.impl.CycleDependencyDetectProcessor;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
-import static com.expressioc.assembler.Assembler.Type.OBJECT_CACHE_ASSEMBLER;
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class ExpressContainer implements Container{
     private Container parent;
 
-    private Multimap<Assembler.Type, Assembler> assemblers = HashMultimap.create();
+    private Map<Class, Object> instancesMap = new HashMap<Class, Object>();
+    private Map<Class, Class> implementationsMap = new HashMap<Class, Class>();
     private List<AssembleProcessor> assembleProcessors = new ArrayList<AssembleProcessor>();
 
-    private Map<Class, Class> implementationsMap = new HashMap<Class, Class>();
-    private Set<Class> classesUnderConstruct = new HashSet<Class>();
-
     public ExpressContainer() {
-        assemblers.put(OBJECT_CACHE_ASSEMBLER, new InstanceInjectionAssembler());
         assembleProcessors.add(new CycleDependencyDetectProcessor());
     }
 
@@ -47,7 +40,7 @@ public class ExpressContainer implements Container{
     }
 
     private <T> T doGetComponent(Class<T> clazz) {
-        T instance = getFromObjectCacheAssembler(clazz);
+        T instance = getInstanceToInject(clazz);
         if (instance != null) {
             return instance;
         }
@@ -148,21 +141,12 @@ public class ExpressContainer implements Container{
     }
 
     public void addComponent(Class clazz, Object instance) {
-        Collection<Assembler> instanceAssemblers = assemblers.get(OBJECT_CACHE_ASSEMBLER);
-        for (Assembler assembler : instanceAssemblers) {
-            assembler.feedAssembler(clazz, instance);
-        }
+        checkArgument(clazz.isInstance(instance), "Expect: clazz.isInstance(instance)", clazz, instance);
+        instancesMap.put(clazz, instance);
     }
 
-    private <T> T getFromObjectCacheAssembler(Class<T> clazz) {
-        Collection<Assembler> instanceAssemblers = assemblers.get(OBJECT_CACHE_ASSEMBLER);
-        for (Assembler assembler : instanceAssemblers) {
-            T instance = assembler.getInstanceBy(clazz);
-            if (instance != null) {
-                return instance;
-            }
-        }
-        return null;
+    private <T> T getInstanceToInject(Class<T> clazz) {
+        return (T)instancesMap.get(clazz);
     }
 
 }
