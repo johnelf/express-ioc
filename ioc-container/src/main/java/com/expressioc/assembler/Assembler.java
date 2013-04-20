@@ -1,4 +1,4 @@
-package com.expressioc.provider;
+package com.expressioc.assembler;
 
 public interface Assembler {
     public enum Type {
@@ -7,5 +7,6 @@ public interface Assembler {
     }
 
     public Type getAssemblerType();
+    public boolean feedAssembler(Class clazz, Object instance);
     public <T> T getInstanceBy(Class<T> clazz);
 }

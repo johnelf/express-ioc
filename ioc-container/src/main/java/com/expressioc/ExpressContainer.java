@@ -2,9 +2,10 @@ package com.expressioc;
 
 import com.expressioc.exception.AssembleComponentFailedException;
 import com.expressioc.exception.CycleDependencyException;
-import com.expressioc.provider.Assembler;
-import com.expressioc.provider.CacheObjectAssembler;
-import com.expressioc.provider.impl.InstanceInjectionAssembler;
+import com.expressioc.assembler.Assembler;
+import com.expressioc.assembler.impl.InstanceInjectionAssembler;
+import com.expressioc.processor.AssembleProcessor;
+import com.expressioc.processor.impl.CycleDependencyDetectProcessor;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
@@ -13,18 +14,20 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
-import static com.expressioc.provider.Assembler.Type.INSTANCE_ASSEMBLER;
+import static com.expressioc.assembler.Assembler.Type.OBJECT_CACHE_ASSEMBLER;
 
 public class ExpressContainer implements Container{
     private Container parent;
 
     private Multimap<Assembler.Type, Assembler> assemblers = HashMultimap.create();
+    private List<AssembleProcessor> assembleProcessors = new ArrayList<AssembleProcessor>();
 
     private Map<Class, Class> implementationsMap = new HashMap<Class, Class>();
     private Set<Class> classesUnderConstruct = new HashSet<Class>();
 
     public ExpressContainer() {
-        assemblers.put(INSTANCE_ASSEMBLER, new InstanceInjectionAssembler());
+        assemblers.put(OBJECT_CACHE_ASSEMBLER, new InstanceInjectionAssembler());
+        assembleProcessors.add(new CycleDependencyDetectProcessor());
     }
 
     public void setParent(ExpressContainer parent) {
@@ -33,12 +36,18 @@ public class ExpressContainer implements Container{
 
     @Override
     public <T> T getComponent(Class<T> clazz) {
-        this.classesUnderConstruct.clear();
+        initProcessors();
         return doGetComponent(clazz);
     }
 
+    private void initProcessors() {
+        for (AssembleProcessor processor : assembleProcessors) {
+            processor.initBeforeGetComponentFromContainer();
+        }
+    }
+
     private <T> T doGetComponent(Class<T> clazz) {
-        T instance = getFromInstanceAssembler(clazz);
+        T instance = getFromObjectCacheAssembler(clazz);
         if (instance != null) {
             return instance;
         }
@@ -46,27 +55,18 @@ public class ExpressContainer implements Container{
         Class concreteClass = implementationsMap.get(clazz);
         Class targetClass = concreteClass == null ? clazz : concreteClass;
 
-        if (classesUnderConstruct.contains(targetClass)) {
-            throw new CycleDependencyException();
+        for (AssembleProcessor processor : assembleProcessors) {
+            processor.beforeAssemble(targetClass);
         }
 
-        classesUnderConstruct.add(targetClass);
+        instance = getInstanceFromConstructor(targetClass);
 
-        Constructor<T>[] constructors = getConstructorsSortedByArgsCount(targetClass);
-        for (Constructor<T> constructor : constructors) {
-            instance = null;
-            try {
-                instance = getComponentBy(constructor);
-                injectComponentBySetter(instance);
-            } catch (CycleDependencyException e) {
-                throw new CycleDependencyException();
-            } catch (Exception e) {
-            }
+        for (AssembleProcessor processor : assembleProcessors) {
+            processor.postAssemble(targetClass, instance);
+        }
 
-            if (instance != null) {
-                classesUnderConstruct.remove(targetClass);
-                return instance;
-            }
+        if (instance != null) {
+            return instance;
         }
 
         if (parent != null) {
@@ -74,6 +74,26 @@ public class ExpressContainer implements Container{
         }
 
         throw new AssembleComponentFailedException();
+    }
+
+    private <T> T getInstanceFromConstructor(Class targetClass) {
+        Constructor<T>[] constructors = getConstructorsSortedByArgsCount(targetClass);
+        for (Constructor<T> constructor : constructors) {
+            T constructingInstance = null;
+            try {
+                constructingInstance = getComponentBy(constructor);
+                injectComponentBySetter(constructingInstance);
+            } catch (CycleDependencyException e) {
+                throw new CycleDependencyException();
+            } catch (Exception e) {
+            }
+
+            if (constructingInstance != null) {
+                return constructingInstance;
+            }
+        }
+
+        return null;
     }
 
     private <T> T injectComponentBySetter(T instance) throws InvocationTargetException, IllegalAccessException {
@@ -128,23 +148,20 @@ public class ExpressContainer implements Container{
     }
 
     public void addComponent(Class clazz, Object instance) {
-        Collection<Assembler> instanceAssemblers = assemblers.get(INSTANCE_ASSEMBLER);
+        Collection<Assembler> instanceAssemblers = assemblers.get(OBJECT_CACHE_ASSEMBLER);
         for (Assembler assembler : instanceAssemblers) {
-            ((CacheObjectAssembler)assembler).feedAssembler(clazz, instance);
+            assembler.feedAssembler(clazz, instance);
         }
     }
 
-    private <T> T getFromInstanceAssembler(Class<T> clazz) {
-        Collection<Assembler> instanceAssemblers = assemblers.get(INSTANCE_ASSEMBLER);
-
+    private <T> T getFromObjectCacheAssembler(Class<T> clazz) {
+        Collection<Assembler> instanceAssemblers = assemblers.get(OBJECT_CACHE_ASSEMBLER);
         for (Assembler assembler : instanceAssemblers) {
-            T instance = ((CacheObjectAssembler)assembler).getInstanceBy(clazz);
-
+            T instance = assembler.getInstanceBy(clazz);
             if (instance != null) {
                 return instance;
             }
         }
-
         return null;
     }
 

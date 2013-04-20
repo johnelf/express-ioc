@@ -1,6 +1,6 @@
-package com.expressioc.provider.impl;
+package com.expressioc.assembler.impl;
 
-import com.expressioc.provider.CacheObjectAssembler;
+import com.expressioc.assembler.CacheObjectAssembler;
 
 import java.util.HashMap;
 import java.util.Map;
