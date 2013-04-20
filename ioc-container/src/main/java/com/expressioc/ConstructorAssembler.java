@@ -9,10 +9,12 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 public class ConstructorAssembler implements Assembler {
-    private final ExpressContainer container;
+    private ExpressContainer container;
 
-    public ConstructorAssembler(ExpressContainer container) {
+    @Override
+    public Assembler setContainer(ExpressContainer container) {
         this.container = container;
+        return this;
     }
 
     public static <T> Constructor<T>[] getConstructorsSortedByArgsCount(Class<T> clazz) {
@@ -31,23 +33,24 @@ public class ConstructorAssembler implements Assembler {
     public <T> T getInstanceBy(Class<T> clazz) {
         Constructor<T>[] constructors = getConstructorsSortedByArgsCount(clazz);
         for (Constructor<T> constructor : constructors) {
-            T constructingInstance = null;
+            T instance = null;
             try {
-                constructingInstance = getComponentBy(constructor);
+                instance = getComponentBy(constructor);
             } catch (CycleDependencyException e) {
                 throw e;
             } catch (Exception e) {
             }
 
-            if (constructingInstance != null) {
-                return constructingInstance;
+            if (instance != null) {
+                return instance;
             }
         }
 
         return null;
     }
 
-    private <T> T getComponentBy(Constructor<T> constructor) throws InvocationTargetException, IllegalAccessException, InstantiationException {
+    private <T> T getComponentBy(Constructor<T> constructor) throws
+            InvocationTargetException, IllegalAccessException, InstantiationException {
         Class[] parameterTypes = constructor.getParameterTypes();
 
         if (parameterTypes.length == 0) {

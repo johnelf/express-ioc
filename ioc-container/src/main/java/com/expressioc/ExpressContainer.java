@@ -5,8 +5,6 @@ import com.expressioc.processor.AssembleProcessor;
 import com.expressioc.processor.impl.CycleDependencyDetectProcessor;
 import com.expressioc.processor.impl.GetParentComponentProcessor;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,13 +17,20 @@ public class ExpressContainer implements Container{
     private Map<Class, Class> implementationsMap = new HashMap<Class, Class>();
     private List<AssembleProcessor> assembleProcessors = new ArrayList<AssembleProcessor>();
     private Assembler assembler;
+    private DependencySetter dependencySetter;
 
     public ExpressContainer() {
-        this(null);
+        this(null, new ConstructorAssembler(), new DefaultDependencySetter());
     }
 
     public ExpressContainer(Container parentContainer) {
-        assembler = new ConstructorAssembler(this);
+        this(parentContainer, new ConstructorAssembler(), new DefaultDependencySetter());
+    }
+
+    public ExpressContainer(Container parentContainer, Assembler assembler, DependencySetter dependencySetter) {
+        this.assembler = assembler.setContainer(this);
+        this.dependencySetter = dependencySetter.setContainer(this);
+
         assembleProcessors.add(new CycleDependencyDetectProcessor());
 
         if (parentContainer != null) {
@@ -56,11 +61,8 @@ public class ExpressContainer implements Container{
         invokePreProcessor(clazz);
         instance = assembler.getInstanceBy(clazz);
 
-        try {
-            if (instance != null)
-                injectComponentBySetter(instance);
-        } catch (InvocationTargetException e) {
-        } catch (IllegalAccessException e) {
+        if (instance != null) {
+            dependencySetter.setDependencies(instance);
         }
 
         instance = invokePostProcessors(clazz, instance);
@@ -88,31 +90,6 @@ public class ExpressContainer implements Container{
         for (AssembleProcessor processor : assembleProcessors) {
             processor.beforeAssemble(clazz);
         }
-    }
-
-    private <T> T injectComponentBySetter(T instance) throws InvocationTargetException, IllegalAccessException {
-        Method[] clazzMethods = instance.getClass().getMethods();
-        for (Method method : clazzMethods) {
-            if (isSetterMethod(method)) {
-                method.invoke(instance, resolveObjects(method.getParameterTypes()));
-            }
-        }
-
-        return instance;
-    }
-
-    private boolean isSetterMethod(Method method) {
-        //TODO: refactor to using regex
-        return method.getName().startsWith("set");
-    }
-
-    private Object[] resolveObjects(Class[] parameterTypes) {
-        ArrayList params = new ArrayList(parameterTypes.length);
-        for (Class paramClazz : parameterTypes) {
-            params.add(doGetComponent(paramClazz));
-        }
-
-        return params.toArray();
     }
 
     public void addComponent(Class interfaceClazz, Class implClazz) {
