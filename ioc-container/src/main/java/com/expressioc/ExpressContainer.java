@@ -2,17 +2,30 @@ package com.expressioc;
 
 import com.expressioc.exception.AssembleComponentFailedException;
 import com.expressioc.exception.CycleDependencyException;
+import com.expressioc.provider.Assembler;
+import com.expressioc.provider.InstanceAssembler;
+import com.expressioc.provider.impl.DefaultInstanceAssembler;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
+import static com.expressioc.provider.Assembler.Type.INSTANCE_ASSEMBLER;
+
 public class ExpressContainer implements Container{
     private Container parent;
+
+    private Multimap<Assembler.Type, Assembler> assemblers = HashMultimap.create();
+
     private Map<Class, Class> implementationsMap = new HashMap<Class, Class>();
-    private Map<Class, Object> instancesMap = new HashMap<Class, Object>();
     private Set<Class> classesUnderConstruct = new HashSet<Class>();
+
+    public ExpressContainer() {
+        assemblers.put(INSTANCE_ASSEMBLER, new DefaultInstanceAssembler());
+    }
 
     public void setParent(ExpressContainer parent) {
         this.parent = parent;
@@ -25,9 +38,9 @@ public class ExpressContainer implements Container{
     }
 
     private <T> T doGetComponent(Class<T> clazz) {
-        Object targetInstance = instancesMap.get(clazz);
-        if (targetInstance != null) {
-            return (T) targetInstance;
+        T instance = getFromInstanceAssembler(clazz);
+        if (instance != null) {
+            return instance;
         }
 
         Class concreteClass = implementationsMap.get(clazz);
@@ -41,7 +54,7 @@ public class ExpressContainer implements Container{
 
         Constructor<T>[] constructors = getConstructorsSortedByArgsCount(targetClass);
         for (Constructor<T> constructor : constructors) {
-            T instance = null;
+            instance = null;
             try {
                 instance = getComponentBy(constructor);
                 injectComponentBySetter(instance);
@@ -114,7 +127,24 @@ public class ExpressContainer implements Container{
         implementationsMap.put(interfaceClazz, implClazz);
     }
 
-    public void addComponent(Class interfaceClazz, Object instance) {
-        instancesMap.put(interfaceClazz, instance);
+    public void addComponent(Class clazz, Object instance) {
+        Collection<Assembler> instanceAssemblers = assemblers.get(INSTANCE_ASSEMBLER);
+        for (Assembler assembler : instanceAssemblers) {
+            ((InstanceAssembler)assembler).feedAssembler(clazz, instance);
+        }
+    }
+
+    private <T> T getFromInstanceAssembler(Class<T> clazz) {
+        Collection<Assembler> instanceAssemblers = assemblers.get(INSTANCE_ASSEMBLER);
+
+        for (Assembler assembler : instanceAssemblers) {
+            T instance = ((InstanceAssembler)assembler).getInstanceBy(clazz);
+
+            if (instance != null) {
+                return instance;
+            }
+        }
+
+        return null;
     }
 }
