@@ -2,6 +2,7 @@ package com.expressioc;
 
 import com.expressioc.exception.AssembleComponentFailedException;
 import com.expressioc.exception.CycleDependencyException;
+import com.expressioc.parameters.ConstParameter;
 import com.expressioc.test.*;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,6 +35,35 @@ public class ExpressContainerTest {
 
         assertThat(instance instanceof IA_As_ConstructorArg, is(true));
         assertThat(instance.getInterfaceA(), notNullValue());
+    }
+
+    @Test
+    public void should_get_instance_by_constructor_with_constant_parameters() {
+        container.addComponent(IB.class,
+                            IBImplWithConstantConstructorArgs.class,
+                            new ConstParameter("MyName"),
+                            new ConstParameter("100"),
+                            new ConstParameter("99999999"));
+
+        IB instance = container.getComponent(IB.class);
+        IBImplWithConstantConstructorArgs concreteInstance = (IBImplWithConstantConstructorArgs)instance;
+
+        assertThat(concreteInstance.getName(), is("MyName"));
+        assertThat(concreteInstance.getAge(), is(100));
+        assertThat(concreteInstance.getDistance(), is(99999999L));
+    }
+
+    @Test
+    public void should_get_instance_by_constructor_with_hybrid_parameters() {
+        container.addComponent(IA.class, IAImpl.class);
+        container.addComponent(IB.class,
+                            IBImplWithConstantConstructorArgs.class,
+                            new ConstParameter("MyName"), null/* will auto_resolve_to IAImpl.class instance*/);
+
+        IB instance = container.getComponent(IB.class);
+        IBImplWithConstantConstructorArgs concreteInstance = (IBImplWithConstantConstructorArgs)instance;
+
+        assertThat(concreteInstance.getName(), is("MyName"));
     }
 
     @Test(expected = IllegalArgumentException.class)

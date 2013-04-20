@@ -1,6 +1,8 @@
 package com.expressioc;
 
+import com.expressioc.exception.AssembleComponentFailedException;
 import com.expressioc.exception.CycleDependencyException;
+import com.expressioc.parameters.Parameter;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -30,7 +32,15 @@ public class ConstructorAssembler implements Assembler {
     }
 
     @Override
-    public <T> T getInstanceBy(Class<T> clazz) {
+    public <T> T getInstanceBy(Class<T> clazz, Parameter... arguments) {
+        if (arguments != null && arguments.length > 0) {
+            return constructBy(clazz, arguments);
+        }
+
+        return constructByMostSuitableConstructor(clazz);
+    }
+
+    private <T> T constructByMostSuitableConstructor(Class<T> clazz) {
         Constructor<T>[] constructors = getConstructorsSortedByArgsCount(clazz);
         for (Constructor<T> constructor : constructors) {
             T instance = null;
@@ -47,6 +57,61 @@ public class ConstructorAssembler implements Assembler {
         }
 
         return null;
+    }
+
+    private <T> T constructBy(Class<T> clazz, Parameter[] arguments) {
+        Constructor constructor = getConstructorsOfArgsCountEqualTo(clazz, arguments.length);
+        Class[] parameterTypes = constructor.getParameterTypes();
+
+        ArrayList<Object> args = new ArrayList<Object>(arguments.length);
+        for (int i = 0; i < parameterTypes.length; i++) {
+            Class paramType = parameterTypes[i];
+            String argValue = arguments[i] != null ? arguments[i].getValue() : "";
+
+            args.add(getArgFrom(paramType, argValue));
+        }
+
+        try {
+            return (T)constructor.newInstance(args.toArray());
+        } catch (Exception e) {
+            throw new AssembleComponentFailedException(e);
+        }
+    }
+
+    private Object getArgFrom(Class type, String value) {
+        if (type.equals(Boolean.class) || type.equals(boolean.class)) {
+            return Boolean.valueOf(value);
+        } else if (type.equals(Byte.class) || type.equals(byte.class)) {
+            return Byte.valueOf(value);
+        } else if (type.equals(Short.class) || type.equals(short.class)) {
+            return Short.valueOf(value);
+        } else if (type.equals(Integer.class) || type.equals(int.class)) {
+            return Integer.valueOf(value);
+        } else if (type.equals(Long.class) || type.equals(long.class)) {
+            return Long.valueOf(value);
+        } else if (type.equals(Float.class) || type.equals(float.class)) {
+            return Float.valueOf(value);
+        } else if (type.equals(Double.class) || type.equals(double.class)) {
+            return Double.valueOf(value);
+        } else if (type.equals(Character.class) || type.equals(char.class)) {
+            return value.toCharArray()[0];
+        } else if (type.equals(String.class)) {
+            return value;
+        }
+
+        return container.getComponent(type);
+    }
+
+
+    private <T> Constructor getConstructorsOfArgsCountEqualTo(Class<T> clazz, int length) {
+        Constructor<T>[] constructors = (Constructor<T>[])clazz.getDeclaredConstructors();
+        for (Constructor constructor : constructors) {
+            if (constructor.getParameterTypes().length == length) {
+                return constructor;
+            }
+        }
+
+        throw new AssembleComponentFailedException("Constructor suitable for provided parameters not found.");
     }
 
     private <T> T getComponentBy(Constructor<T> constructor) throws

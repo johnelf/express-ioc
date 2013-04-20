@@ -1,6 +1,7 @@
 package com.expressioc;
 
 import com.expressioc.exception.AssembleComponentFailedException;
+import com.expressioc.parameters.Parameter;
 import com.expressioc.processor.AssembleProcessor;
 import com.expressioc.processor.impl.CycleDependencyDetectProcessor;
 import com.expressioc.processor.impl.GetParentComponentProcessor;
@@ -15,6 +16,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 public class ExpressContainer implements Container{
     private Map<Class, Object> instancesMap = new HashMap<Class, Object>();
     private Map<Class, Class> implementationsMap = new HashMap<Class, Class>();
+    private Map<Class, Object> constructorArgs = new HashMap<Class, Object>();
     private List<AssembleProcessor> assembleProcessors = new ArrayList<AssembleProcessor>();
     private Assembler assembler;
     private DependencySetter dependencySetter;
@@ -60,7 +62,7 @@ public class ExpressContainer implements Container{
 
         invokePreProcessor(clazz);
         {
-            instance = assembler.getInstanceBy(clazz);
+            instance = assembler.getInstanceBy(clazz, (Parameter[])constructorArgs.get(clazz));
             if (instance != null) {
                 dependencySetter.setDependencies(instance);
             }
@@ -91,17 +93,24 @@ public class ExpressContainer implements Container{
         }
     }
 
-    public void addComponent(Class interfaceClazz, Class implClazz) {
-        implementationsMap.put(interfaceClazz, implClazz);
-    }
-
     public void addComponent(Class clazz, Object instance) {
         checkArgument(clazz.isInstance(instance), "Expect: clazz.isInstance(instance)", clazz, instance);
         instancesMap.put(clazz, instance);
     }
 
+    public void addComponent(Class interfaceClazz, Class implClazz) {
+        implementationsMap.put(interfaceClazz, implClazz);
+    }
+
+    public void addComponent(Class interfaceClazz, Class implClazz, Parameter... constructorParams) {
+        implementationsMap.put(interfaceClazz, implClazz);
+
+        if (constructorParams.length > 0) {
+            constructorArgs.put(implClazz, constructorParams);
+        }
+    }
+
     private <T> T getInstanceToInjectIfHave(Class<T> clazz) {
         return (T)instancesMap.get(clazz);
     }
-
 }
