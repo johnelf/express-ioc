@@ -1,34 +1,36 @@
 package com.expressioc;
 
 import com.expressioc.exception.AssembleComponentFailedException;
-import com.expressioc.exception.CycleDependencyException;
 import com.expressioc.processor.AssembleProcessor;
 import com.expressioc.processor.impl.CycleDependencyDetectProcessor;
 import com.expressioc.processor.impl.GetParentComponentProcessor;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class ExpressContainer implements Container{
-    private Container parent;
-
     private Map<Class, Object> instancesMap = new HashMap<Class, Object>();
     private Map<Class, Class> implementationsMap = new HashMap<Class, Class>();
     private List<AssembleProcessor> assembleProcessors = new ArrayList<AssembleProcessor>();
+    private Assembler assembler;
 
     public ExpressContainer() {
-        assembleProcessors.add(new CycleDependencyDetectProcessor());
+        this(null);
     }
 
     public ExpressContainer(Container parentContainer) {
-        this.parent = parentContainer;
-
+        assembler = new ConstructorAssembler(this);
         assembleProcessors.add(new CycleDependencyDetectProcessor());
-        assembleProcessors.add(new GetParentComponentProcessor(parentContainer));
+
+        if (parentContainer != null) {
+            assembleProcessors.add(new GetParentComponentProcessor(parentContainer));
+        }
     }
 
     @Override
@@ -43,7 +45,7 @@ public class ExpressContainer implements Container{
         }
     }
 
-    private <T> T doGetComponent(Class<T> clazz) {
+    <T> T doGetComponent(Class<T> clazz) {
         T instance = getInstanceToInjectIfHave(clazz);
         if (instance != null) {
             return instance;
@@ -52,7 +54,15 @@ public class ExpressContainer implements Container{
         clazz = getImplementationClassIfHave(clazz);
 
         invokePreProcessor(clazz);
-        instance = getInstanceFromConstructor(clazz);
+        instance = assembler.getInstanceBy(clazz);
+
+        try {
+            if (instance != null)
+                injectComponentBySetter(instance);
+        } catch (InvocationTargetException e) {
+        } catch (IllegalAccessException e) {
+        }
+
         instance = invokePostProcessors(clazz, instance);
 
         if (instance != null) {
@@ -80,26 +90,6 @@ public class ExpressContainer implements Container{
         }
     }
 
-    private <T> T getInstanceFromConstructor(Class targetClass) {
-        Constructor<T>[] constructors = getConstructorsSortedByArgsCount(targetClass);
-        for (Constructor<T> constructor : constructors) {
-            T constructingInstance = null;
-            try {
-                constructingInstance = getComponentBy(constructor);
-                injectComponentBySetter(constructingInstance);
-            } catch (CycleDependencyException e) {
-                throw new CycleDependencyException();
-            } catch (Exception e) {
-            }
-
-            if (constructingInstance != null) {
-                return constructingInstance;
-            }
-        }
-
-        return null;
-    }
-
     private <T> T injectComponentBySetter(T instance) throws InvocationTargetException, IllegalAccessException {
         Method[] clazzMethods = instance.getClass().getMethods();
         for (Method method : clazzMethods) {
@@ -116,16 +106,6 @@ public class ExpressContainer implements Container{
         return method.getName().startsWith("set");
     }
 
-    private <T> T getComponentBy(Constructor<T> constructor) throws InvocationTargetException, IllegalAccessException, InstantiationException {
-        Class[] parameterTypes = constructor.getParameterTypes();
-
-        if (parameterTypes.length == 0) {
-            return constructor.newInstance();
-        }
-
-        return constructor.newInstance(resolveObjects(parameterTypes));
-    }
-
     private Object[] resolveObjects(Class[] parameterTypes) {
         ArrayList params = new ArrayList(parameterTypes.length);
         for (Class paramClazz : parameterTypes) {
@@ -133,18 +113,6 @@ public class ExpressContainer implements Container{
         }
 
         return params.toArray();
-    }
-
-    private <T> Constructor<T>[] getConstructorsSortedByArgsCount(Class<T> clazz) {
-        Constructor<T>[] constructors = (Constructor<T>[])clazz.getDeclaredConstructors();
-        Arrays.sort(constructors, new Comparator<Constructor<?>>() {
-            @Override
-            public int compare(Constructor<?> constructorA, Constructor<?> constructorB) {
-                return constructorB.getParameterTypes().length - constructorA.getParameterTypes().length;
-            }
-        });
-
-        return constructors;
     }
 
     public void addComponent(Class interfaceClazz, Class implClazz) {
