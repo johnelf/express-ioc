@@ -99,9 +99,5 @@ public class ExpressContainerTest {
         container.getComponent(IA_As_ConstructorArg.class);
     }
 
-
-
-    //TODO: should inject basic type
     //TODO: how to fix set again after construction.
-    //TODO: init container with package name, and init with annotations in specified package.
 }
