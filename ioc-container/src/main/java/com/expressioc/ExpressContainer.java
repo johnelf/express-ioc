@@ -59,19 +59,18 @@ public class ExpressContainer implements Container{
         clazz = getImplementationClassIfHave(clazz);
 
         invokePreProcessor(clazz);
-        instance = assembler.getInstanceBy(clazz);
-
-        if (instance != null) {
-            dependencySetter.setDependencies(instance);
+        {
+            instance = assembler.getInstanceBy(clazz);
+            if (instance != null) {
+                dependencySetter.setDependencies(instance);
+            }
         }
-
         instance = invokePostProcessors(clazz, instance);
 
-        if (instance != null) {
-            return instance;
+        if (instance == null) {
+            throw new AssembleComponentFailedException();
         }
-
-        throw new AssembleComponentFailedException();
+        return instance;
     }
 
     private Class getImplementationClassIfHave(Class clazz) {
