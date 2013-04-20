@@ -98,6 +98,4 @@ public class ExpressContainerTest {
 
         container.getComponent(IA_As_ConstructorArg.class);
     }
-
-    //TODO: how to fix set again after construction.
 }
