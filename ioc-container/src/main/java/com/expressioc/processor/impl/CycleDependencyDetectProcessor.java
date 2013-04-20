@@ -15,14 +15,12 @@ public class CycleDependencyDetectProcessor implements AssembleProcessor {
     }
 
     @Override
-    public <T> Class<? extends T> beforeAssemble(Class<T> clazz) {
+    public void beforeAssemble(Class clazz) {
         if (classesUnderConstruct.contains(clazz)) {
             throw new CycleDependencyException();
         }
 
         classesUnderConstruct.add(clazz);
-
-        return clazz;
     }
 
     @Override

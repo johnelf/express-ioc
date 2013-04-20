@@ -20,11 +20,12 @@ public class ExpressContainer implements Container{
     private List<AssembleProcessor> assembleProcessors = new ArrayList<AssembleProcessor>();
 
     public ExpressContainer() {
-        assembleProcessors.add(new CycleDependencyDetectProcessor());
+        this(null);
     }
 
-    public void setParent(ExpressContainer parent) {
-        this.parent = parent;
+    public ExpressContainer(ExpressContainer parentContainer) {
+        this.parent = parentContainer;
+        assembleProcessors.add(new CycleDependencyDetectProcessor());
     }
 
     @Override
@@ -40,23 +41,16 @@ public class ExpressContainer implements Container{
     }
 
     private <T> T doGetComponent(Class<T> clazz) {
-        T instance = getInstanceToInject(clazz);
+        T instance = getInstanceToInjectIfHave(clazz);
         if (instance != null) {
             return instance;
         }
 
-        Class concreteClass = implementationsMap.get(clazz);
-        Class targetClass = concreteClass == null ? clazz : concreteClass;
+        clazz = getImplementationClassIfHave(clazz);
 
-        for (AssembleProcessor processor : assembleProcessors) {
-            processor.beforeAssemble(targetClass);
-        }
-
-        instance = getInstanceFromConstructor(targetClass);
-
-        for (AssembleProcessor processor : assembleProcessors) {
-            processor.postAssemble(targetClass, instance);
-        }
+        invokePreProcessor(clazz);
+        instance = getInstanceFromConstructor(clazz);
+        invokePostProcessors(clazz, instance);
 
         if (instance != null) {
             return instance;
@@ -67,6 +61,22 @@ public class ExpressContainer implements Container{
         }
 
         throw new AssembleComponentFailedException();
+    }
+
+    private Class getImplementationClassIfHave(Class clazz) {
+        return implementationsMap.containsKey(clazz) ? implementationsMap.get(clazz) : clazz;
+    }
+
+    private <T> void invokePostProcessors(Class<T> clazz, T instance) {
+        for (AssembleProcessor processor : assembleProcessors) {
+            processor.postAssemble(clazz, instance);
+        }
+    }
+
+    private <T> void invokePreProcessor(Class<T> clazz) {
+        for (AssembleProcessor processor : assembleProcessors) {
+            processor.beforeAssemble(clazz);
+        }
     }
 
     private <T> T getInstanceFromConstructor(Class targetClass) {
@@ -145,7 +155,7 @@ public class ExpressContainer implements Container{
         instancesMap.put(clazz, instance);
     }
 
-    private <T> T getInstanceToInject(Class<T> clazz) {
+    private <T> T getInstanceToInjectIfHave(Class<T> clazz) {
         return (T)instancesMap.get(clazz);
     }
 

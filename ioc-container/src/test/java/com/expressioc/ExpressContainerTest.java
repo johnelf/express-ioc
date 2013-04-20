@@ -11,14 +11,13 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
-public class InjectionTest {
+public class ExpressContainerTest {
 
     private ExpressContainer container;
 
     @Before
     public void setUp() {
         container = new ExpressContainer();
-        container.setParent(null);
     }
 
     @Test
@@ -85,7 +84,8 @@ public class InjectionTest {
     public void should_get_dependency_from_parent_container() {
         ExpressContainer parentContainer = new ExpressContainer();
         parentContainer.addComponent(IA.class, IAImpl.class);
-        container.setParent(parentContainer);
+
+        container = new ExpressContainer(parentContainer);
 
         IA_As_ConstructorArg instance = container.getComponent(IA_As_ConstructorArg.class);
         assertThat(instance.getInterfaceA(), is(IAImpl.class));
@@ -93,7 +93,8 @@ public class InjectionTest {
 
     @Test(expected = AssembleComponentFailedException.class)
     public void should_throw_assemble_exception_when_dependency_not_exist_in_parent_container() {
-        container.setParent(new ExpressContainer());
+        ExpressContainer emptyParentContainer = new ExpressContainer();
+        ExpressContainer container = new ExpressContainer(emptyParentContainer);
 
         container.getComponent(IA_As_ConstructorArg.class);
     }
