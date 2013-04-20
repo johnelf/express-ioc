@@ -37,6 +37,11 @@ public class InjectionTest {
         assertThat(instance.getInterfaceA(), notNullValue());
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void should_throw_exception_when_inject_instance_with_wrong_class() {
+        container.addComponent(IA.class, new Object());
+    }
+
     @Test
     public void should_inject_instance_to_constructor() {
         IA interfaceAImplInstance = new IAImpl();

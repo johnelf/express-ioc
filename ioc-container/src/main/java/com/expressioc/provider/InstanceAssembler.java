@@ -7,6 +7,4 @@ public abstract class InstanceAssembler implements Assembler{
         return INSTANCE_ASSEMBLER;
     }
 
-    public abstract boolean feedAssembler(Class clazz, Object instance);
-    public abstract <T> T getInstanceBy(Class<T> clazz);
 }

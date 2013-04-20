@@ -3,8 +3,8 @@ package com.expressioc;
 import com.expressioc.exception.AssembleComponentFailedException;
 import com.expressioc.exception.CycleDependencyException;
 import com.expressioc.provider.Assembler;
-import com.expressioc.provider.InstanceAssembler;
-import com.expressioc.provider.impl.DefaultInstanceAssembler;
+import com.expressioc.provider.CacheObjectAssembler;
+import com.expressioc.provider.impl.InstanceInjectionAssembler;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
@@ -24,7 +24,7 @@ public class ExpressContainer implements Container{
     private Set<Class> classesUnderConstruct = new HashSet<Class>();
 
     public ExpressContainer() {
-        assemblers.put(INSTANCE_ASSEMBLER, new DefaultInstanceAssembler());
+        assemblers.put(INSTANCE_ASSEMBLER, new InstanceInjectionAssembler());
     }
 
     public void setParent(ExpressContainer parent) {
@@ -130,7 +130,7 @@ public class ExpressContainer implements Container{
     public void addComponent(Class clazz, Object instance) {
         Collection<Assembler> instanceAssemblers = assemblers.get(INSTANCE_ASSEMBLER);
         for (Assembler assembler : instanceAssemblers) {
-            ((InstanceAssembler)assembler).feedAssembler(clazz, instance);
+            ((CacheObjectAssembler)assembler).feedAssembler(clazz, instance);
         }
     }
 
@@ -138,7 +138,7 @@ public class ExpressContainer implements Container{
         Collection<Assembler> instanceAssemblers = assemblers.get(INSTANCE_ASSEMBLER);
 
         for (Assembler assembler : instanceAssemblers) {
-            T instance = ((InstanceAssembler)assembler).getInstanceBy(clazz);
+            T instance = ((CacheObjectAssembler)assembler).getInstanceBy(clazz);
 
             if (instance != null) {
                 return instance;
@@ -147,4 +147,5 @@ public class ExpressContainer implements Container{
 
         return null;
     }
+
 }
