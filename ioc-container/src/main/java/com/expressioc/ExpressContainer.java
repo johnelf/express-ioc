@@ -4,6 +4,7 @@ import com.expressioc.exception.AssembleComponentFailedException;
 import com.expressioc.exception.CycleDependencyException;
 import com.expressioc.processor.AssembleProcessor;
 import com.expressioc.processor.impl.CycleDependencyDetectProcessor;
+import com.expressioc.processor.impl.GetParentComponentProcessor;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -20,12 +21,14 @@ public class ExpressContainer implements Container{
     private List<AssembleProcessor> assembleProcessors = new ArrayList<AssembleProcessor>();
 
     public ExpressContainer() {
-        this(null);
+        assembleProcessors.add(new CycleDependencyDetectProcessor());
     }
 
-    public ExpressContainer(ExpressContainer parentContainer) {
+    public ExpressContainer(Container parentContainer) {
         this.parent = parentContainer;
+
         assembleProcessors.add(new CycleDependencyDetectProcessor());
+        assembleProcessors.add(new GetParentComponentProcessor(parentContainer));
     }
 
     @Override
@@ -50,14 +53,10 @@ public class ExpressContainer implements Container{
 
         invokePreProcessor(clazz);
         instance = getInstanceFromConstructor(clazz);
-        invokePostProcessors(clazz, instance);
+        instance = invokePostProcessors(clazz, instance);
 
         if (instance != null) {
             return instance;
-        }
-
-        if (parent != null) {
-            return parent.getComponent(clazz);
         }
 
         throw new AssembleComponentFailedException();
@@ -67,10 +66,12 @@ public class ExpressContainer implements Container{
         return implementationsMap.containsKey(clazz) ? implementationsMap.get(clazz) : clazz;
     }
 
-    private <T> void invokePostProcessors(Class<T> clazz, T instance) {
+    private <T> T invokePostProcessors(Class<T> clazz, T instance) {
         for (AssembleProcessor processor : assembleProcessors) {
-            processor.postAssemble(clazz, instance);
+            instance = (T) processor.postAssemble(clazz, instance);
         }
+
+        return instance;
     }
 
     private <T> void invokePreProcessor(Class<T> clazz) {

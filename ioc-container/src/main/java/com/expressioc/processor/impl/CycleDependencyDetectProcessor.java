@@ -24,9 +24,11 @@ public class CycleDependencyDetectProcessor implements AssembleProcessor {
     }
 
     @Override
-    public void postAssemble(Class clazz, Object instance) {
+    public Object postAssemble(Class clazz, Object instance) {
         if (instance != null) {
             classesUnderConstruct.remove(clazz);
         }
+
+        return instance;
     }
 }
