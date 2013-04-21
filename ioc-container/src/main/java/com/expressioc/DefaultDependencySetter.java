@@ -29,8 +29,7 @@ public class DefaultDependencySetter implements DependencySetter{
     }
 
     private boolean isSetterMethod(Method method) {
-        //TODO: refactor to using regex
-        return method.getName().startsWith("set");
+        return method.getName().matches("set[A-Z]{1}\\w*");
     }
 
     private Object[] resolveObjects(Class[] parameterTypes) {
