@@ -1,2 +1,2 @@
-include(":ioc-container")
+include(":express-ioc")
 include(":demo")
