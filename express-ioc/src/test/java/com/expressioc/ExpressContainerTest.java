@@ -135,4 +135,10 @@ public class ExpressContainerTest {
         IC_As_ConstructorArg instance = container.getComponent(IC_As_ConstructorArg.class);
         assertThat(instance.getIcInstance() instanceof ICImpl, is(true));
     }
+
+    @Test(expected = AssembleComponentFailedException.class)
+    public void should_failed_when_find_more_than_one_implementation_when_auto_find_implementation() {
+        ExpressContainer container = new ExpressContainer("com.expressioc.test");
+        container.getComponent(IA_As_ConstructorArg.class);
+    }
 }
