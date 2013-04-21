@@ -5,7 +5,9 @@ import com.expressioc.parameters.Parameter;
 import com.expressioc.processor.AssembleProcessor;
 import com.expressioc.processor.impl.CycleDependencyDetectProcessor;
 import com.expressioc.processor.impl.GetParentComponentProcessor;
+import com.google.common.reflect.ClassPath;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -20,6 +22,7 @@ public class ExpressContainer implements Container{
     private List<AssembleProcessor> assembleProcessors = new ArrayList<AssembleProcessor>();
     private Assembler assembler;
     private DependencySetter dependencySetter;
+    private String packageToAutoRevealSingleImplementation;
 
     public ExpressContainer() {
         this(null, new ConstructorAssembler(), new DefaultDependencySetter());
@@ -38,6 +41,38 @@ public class ExpressContainer implements Container{
         if (parentContainer != null) {
             assembleProcessors.add(new GetParentComponentProcessor(parentContainer));
         }
+    }
+
+    public ExpressContainer(String packageToAutoRevealSingleImplementation) {
+        this();
+        this.packageToAutoRevealSingleImplementation = packageToAutoRevealSingleImplementation;
+    }
+
+    private Class autoFindSingleImplementationOfInterface(Class interfaceClass) {
+        ClassPath classpath = null;
+
+        try {
+            classpath = ClassPath.from(ClassLoader.getSystemClassLoader());
+        } catch (IOException e) {
+        }
+
+        Class implementationClasses = null;
+
+        for (ClassPath.ClassInfo classInfo : classpath.getTopLevelClassesRecursive(packageToAutoRevealSingleImplementation)) {
+            Class<?> clazz = classInfo.load();
+
+            boolean isImplementationClass = interfaceClass != clazz && interfaceClass.isAssignableFrom(clazz);
+            if (isImplementationClass) {
+                boolean haveMoreThanOneImplementationClass = implementationClasses != null;
+                if (haveMoreThanOneImplementationClass) {
+                    return null;
+                }
+
+                implementationClasses = clazz;
+            }
+        }
+
+        return implementationClasses;
     }
 
     @Override
@@ -76,7 +111,13 @@ public class ExpressContainer implements Container{
     }
 
     private Class getImplementationClassIfHave(Class clazz) {
-        return implementationsMap.containsKey(clazz) ? implementationsMap.get(clazz) : clazz;
+        Class implClass = implementationsMap.get(clazz);
+
+        if (implClass == null && packageToAutoRevealSingleImplementation != null){
+             implClass = autoFindSingleImplementationOfInterface(clazz);
+        }
+
+        return implClass == null ? clazz : implClass;
     }
 
     private <T> T invokePostProcessors(Class<T> clazz, T instance) {

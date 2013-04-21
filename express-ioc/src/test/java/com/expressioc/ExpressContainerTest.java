@@ -128,4 +128,11 @@ public class ExpressContainerTest {
 
         container.getComponent(IA_As_ConstructorArg.class);
     }
+
+    @Test
+    public void should_able_to_find_single_implementation_class_of_interface_by_default() {
+        ExpressContainer container = new ExpressContainer("com.expressioc.test");
+        IC_As_ConstructorArg instance = container.getComponent(IC_As_ConstructorArg.class);
+        assertThat(instance.getIcInstance() instanceof ICImpl, is(true));
+    }
 }
