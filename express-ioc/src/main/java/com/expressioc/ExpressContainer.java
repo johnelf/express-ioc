@@ -54,6 +54,7 @@ public class ExpressContainer implements Container{
         try {
             classpath = ClassPath.from(ClassLoader.getSystemClassLoader());
         } catch (IOException e) {
+            return null;
         }
 
         Class implementationClasses = null;
