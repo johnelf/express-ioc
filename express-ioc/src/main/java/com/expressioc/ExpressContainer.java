@@ -1,8 +1,10 @@
 package com.expressioc;
 
+import com.expressioc.beanscope.SingletonCache;
 import com.expressioc.exception.AssembleComponentFailedException;
 import com.expressioc.parameters.Parameter;
 import com.expressioc.processor.AssembleProcessor;
+import com.expressioc.processor.impl.CacheSingletonInstanceProcessor;
 import com.expressioc.processor.impl.CycleDependencyDetectProcessor;
 import com.expressioc.processor.impl.GetParentComponentProcessor;
 import com.expressioc.utility.ClassUtility;
@@ -24,10 +26,7 @@ public class ExpressContainer implements Container{
     private Assembler assembler;
     private DependencySetter dependencySetter;
     private String packageToAutoRevealImplements;
-
-    public ExpressContainer() {
-        this(null, new ConstructorAssembler(), new DefaultDependencySetter());
-    }
+    private SingletonCache singletonCache;
 
     public ExpressContainer(String packageToAutoRevealSingleImplementation) {
         this(packageToAutoRevealSingleImplementation, null);
@@ -42,6 +41,10 @@ public class ExpressContainer implements Container{
         this(parentContainer, new ConstructorAssembler(), new DefaultDependencySetter());
     }
 
+    public ExpressContainer() {
+        this(null, new ConstructorAssembler(), new DefaultDependencySetter());
+    }
+
     public ExpressContainer(Container parentContainer, Assembler assembler, DependencySetter dependencySetter) {
         this.assembler = assembler.setContainer(this);
         this.dependencySetter = dependencySetter.setContainer(this);
@@ -51,6 +54,14 @@ public class ExpressContainer implements Container{
         if (parentContainer != null) {
             assembleProcessors.add(new GetParentComponentProcessor(parentContainer));
         }
+
+        addSingletonCacheAndProcessor(assembleProcessors);
+    }
+
+    private void addSingletonCacheAndProcessor(List<AssembleProcessor> processors) {
+        CacheSingletonInstanceProcessor cacheSingletonInstanceProcessor = new CacheSingletonInstanceProcessor();
+        processors.add(cacheSingletonInstanceProcessor);
+        this.singletonCache = cacheSingletonInstanceProcessor;
     }
 
     private Class autoFindSingleImplementationOfInterface(Class interfaceClass) {
@@ -101,7 +112,7 @@ public class ExpressContainer implements Container{
     }
 
     <T> T doGetComponent(Class<T> clazz) {
-        T instance = getInstanceToInjectIfHave(clazz);
+        T instance = getReadyInstanceIfHave(clazz);
         if (instance != null) {
             return instance;
         }
@@ -162,6 +173,15 @@ public class ExpressContainer implements Container{
         if (constructorParams.length > 0) {
             constructorArgs.put(implClazz, constructorParams);
         }
+    }
+
+    private <T> T getReadyInstanceIfHave(Class<T> clazz) {
+        T instanceToInject = getInstanceToInjectIfHave(clazz);
+        if (instanceToInject != null) {
+            return instanceToInject;
+        }
+
+        return this.singletonCache.getSingletons(clazz);
     }
 
     private <T> T getInstanceToInjectIfHave(Class<T> clazz) {

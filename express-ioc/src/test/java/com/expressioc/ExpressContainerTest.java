@@ -159,4 +159,13 @@ public class ExpressContainerTest {
         assertThat(clazz0.equals(ICImpl.class) || clazz0.equals(ICImpl2.class), is(true));
         assertThat(clazz1.equals(ICImpl.class) || clazz1.equals(ICImpl2.class), is(true));
     }
+
+    @Test
+    public void should_cache_created_instance_of_class_tagged_with_Singleton_annotation() {
+        ExpressContainer container = new ExpressContainer("com.expressioc.test");
+        ICImpl a = container.getComponent(ICImpl.class);
+        ICImpl b = container.getComponent(ICImpl.class);
+
+        assertThat(a != null && a == b, is(true));
+    }
 }
