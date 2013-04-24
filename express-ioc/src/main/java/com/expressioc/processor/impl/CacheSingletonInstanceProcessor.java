@@ -1,7 +1,7 @@
 package com.expressioc.processor.impl;
 
 import com.expressioc.annotation.Singleton;
-import com.expressioc.beanscope.SingletonCache;
+import com.expressioc.scope.SingletonCache;
 import com.expressioc.processor.AssembleProcessor;
 
 import java.util.HashMap;

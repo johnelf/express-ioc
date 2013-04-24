@@ -145,7 +145,7 @@ public class ExpressContainerTest {
     }
 
     @Test
-    public void should_able_to_correctly_pre_load_class_tagged_by_PreLoad() {
+    public void should_able_to_correctly_load_implementation_objects_list() {
         ExpressContainer container = new ExpressContainer("com.expressioc.test");
 
         List<? extends IC> preLoadedICs = container.getImplementationObjectListOf(IC.class);
@@ -167,5 +167,13 @@ public class ExpressContainerTest {
         ICImpl b = container.getComponent(ICImpl.class);
 
         assertThat(a != null && a == b, is(true));
+    }
+
+    @Test
+    public void should_get_the_container_in_which_instance_located_when_instance_is_ContainerAware() {
+        ExpressContainer container = new ExpressContainer("com.expressioc.test");
+
+        ICImpl2 containAwareObject = container.getComponent(ICImpl2.class);
+        assertThat(containAwareObject.getWhichContainerIAmIn() == container, is(true));
     }
 }

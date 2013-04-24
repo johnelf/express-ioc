@@ -1,6 +1,7 @@
 package com.expressioc;
 
-import com.expressioc.beanscope.SingletonCache;
+import com.expressioc.processor.impl.ContainerAwareProcessor;
+import com.expressioc.scope.SingletonCache;
 import com.expressioc.exception.AssembleComponentFailedException;
 import com.expressioc.parameters.Parameter;
 import com.expressioc.processor.AssembleProcessor;
@@ -47,6 +48,7 @@ public class ExpressContainer implements Container{
 
     public ExpressContainer(Container parentContainer, Assembler assembler, DependencySetter dependencySetter) {
         this.assembler = assembler.setContainer(this);
+
         this.dependencySetter = dependencySetter.setContainer(this);
 
         assembleProcessors.add(new CycleDependencyDetectProcessor());
@@ -56,6 +58,8 @@ public class ExpressContainer implements Container{
         }
 
         addSingletonCacheAndProcessor(assembleProcessors);
+
+        assembleProcessors.add(new ContainerAwareProcessor(this));
     }
 
     private void addSingletonCacheAndProcessor(List<AssembleProcessor> processors) {
