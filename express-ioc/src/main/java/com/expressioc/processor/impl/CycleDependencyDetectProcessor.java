@@ -17,7 +17,7 @@ public class CycleDependencyDetectProcessor implements AssembleProcessor {
     @Override
     public void beforeAssemble(Class clazz) {
         if (classesUnderConstruct.contains(clazz)) {
-            throw new CycleDependencyException();
+            throw new CycleDependencyException(clazz);
         }
 
         classesUnderConstruct.add(clazz);
