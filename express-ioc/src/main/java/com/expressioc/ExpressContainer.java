@@ -28,6 +28,15 @@ public class ExpressContainer implements Container{
         this(null, new ConstructorAssembler(), new DefaultDependencySetter());
     }
 
+    public ExpressContainer(String packageToAutoRevealSingleImplementation) {
+        this(packageToAutoRevealSingleImplementation, null);
+    }
+
+    public ExpressContainer(String packageToAutoRevealSingleImplementation, Container parentContainer) {
+        this(parentContainer);
+        this.packageToAutoRevealSingleImplementation = packageToAutoRevealSingleImplementation;
+    }
+
     public ExpressContainer(Container parentContainer) {
         this(parentContainer, new ConstructorAssembler(), new DefaultDependencySetter());
     }
@@ -41,11 +50,6 @@ public class ExpressContainer implements Container{
         if (parentContainer != null) {
             assembleProcessors.add(new GetParentComponentProcessor(parentContainer));
         }
-    }
-
-    public ExpressContainer(String packageToAutoRevealSingleImplementation) {
-        this();
-        this.packageToAutoRevealSingleImplementation = packageToAutoRevealSingleImplementation;
     }
 
     private Class autoFindSingleImplementationOfInterface(Class interfaceClass) {
@@ -106,7 +110,7 @@ public class ExpressContainer implements Container{
         instance = invokePostProcessors(clazz, instance);
 
         if (instance == null) {
-            throw new AssembleComponentFailedException();
+            throw new AssembleComponentFailedException(clazz);
         }
         return instance;
     }
