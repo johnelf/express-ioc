@@ -5,15 +5,16 @@ import com.expressioc.parameters.Parameter;
 import com.expressioc.processor.AssembleProcessor;
 import com.expressioc.processor.impl.CycleDependencyDetectProcessor;
 import com.expressioc.processor.impl.GetParentComponentProcessor;
+import com.expressioc.utility.ClassUtility;
 import com.google.common.reflect.ClassPath;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.Lists.newArrayList;
 
 public class ExpressContainer implements Container{
     private Map<Class, Object> instancesMap = new HashMap<Class, Object>();
@@ -22,7 +23,7 @@ public class ExpressContainer implements Container{
     private List<AssembleProcessor> assembleProcessors = new ArrayList<AssembleProcessor>();
     private Assembler assembler;
     private DependencySetter dependencySetter;
-    private String packageToAutoRevealSingleImplementation;
+    private String packageToAutoRevealImplements;
 
     public ExpressContainer() {
         this(null, new ConstructorAssembler(), new DefaultDependencySetter());
@@ -32,9 +33,9 @@ public class ExpressContainer implements Container{
         this(packageToAutoRevealSingleImplementation, null);
     }
 
-    public ExpressContainer(String packageToAutoRevealSingleImplementation, Container parentContainer) {
+    public ExpressContainer(String packageToAutoRevealImplements, Container parentContainer) {
         this(parentContainer);
-        this.packageToAutoRevealSingleImplementation = packageToAutoRevealSingleImplementation;
+        this.packageToAutoRevealImplements = packageToAutoRevealImplements;
     }
 
     public ExpressContainer(Container parentContainer) {
@@ -53,17 +54,9 @@ public class ExpressContainer implements Container{
     }
 
     private Class autoFindSingleImplementationOfInterface(Class interfaceClass) {
-        ClassPath classpath = null;
-
-        try {
-            classpath = ClassPath.from(ClassLoader.getSystemClassLoader());
-        } catch (IOException e) {
-            return null;
-        }
-
         Class implementationClasses = null;
 
-        for (ClassPath.ClassInfo classInfo : classpath.getTopLevelClassesRecursive(packageToAutoRevealSingleImplementation)) {
+        for (ClassPath.ClassInfo classInfo : ClassUtility.getTopLevelClassesOf(packageToAutoRevealImplements)) {
             Class<?> clazz = classInfo.load();
 
             boolean isImplementationClass = interfaceClass != clazz && interfaceClass.isAssignableFrom(clazz);
@@ -84,6 +77,21 @@ public class ExpressContainer implements Container{
     public <T> T getComponent(Class<T> clazz) {
         initProcessors();
         return doGetComponent(clazz);
+    }
+
+    @Override
+    public <T> List<T> getImplementationObjectListOf(Class<T> interfaceClass) {
+        List<T> objectList = newArrayList();
+
+        for (ClassPath.ClassInfo classInfo : ClassUtility.getTopLevelClassesOf(packageToAutoRevealImplements)) {
+            Class<?> clazz = classInfo.load();
+            boolean isImplementationClass = interfaceClass != clazz && interfaceClass.isAssignableFrom(clazz);
+            if (isImplementationClass) {
+                objectList.add((T) getComponent(clazz));
+            }
+        }
+
+        return objectList;
     }
 
     private void initProcessors() {
@@ -118,7 +126,7 @@ public class ExpressContainer implements Container{
     private Class getImplementationClassIfHave(Class clazz) {
         Class implClass = implementationsMap.get(clazz);
 
-        if (implClass == null && packageToAutoRevealSingleImplementation != null){
+        if (implClass == null && packageToAutoRevealImplements != null){
              implClass = autoFindSingleImplementationOfInterface(clazz);
         }
 

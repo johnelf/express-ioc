@@ -1,5 +1,9 @@
 package com.expressioc.utility;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.ClassPath;
+
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -84,5 +88,14 @@ public class ClassUtility {
         }
 
         return null;
+    }
+
+    public static ImmutableSet<ClassPath.ClassInfo> getTopLevelClassesOf(String packageToAutoRevealSingleImplementation1) {
+        try {
+            ClassPath classpath = ClassPath.from(ClassLoader.getSystemClassLoader());
+            return classpath.getTopLevelClassesRecursive(packageToAutoRevealSingleImplementation1);
+        } catch (IOException e) {
+            return ImmutableSet.of();
+        }
     }
 }

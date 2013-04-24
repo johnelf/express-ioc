@@ -7,6 +7,8 @@ import com.expressioc.test.*;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
+
 import static junit.framework.Assert.assertNotNull;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -140,5 +142,21 @@ public class ExpressContainerTest {
     public void should_failed_when_find_more_than_one_implementation_when_auto_find_implementation() {
         ExpressContainer container = new ExpressContainer("com.expressioc.test");
         container.getComponent(IA_As_ConstructorArg.class);
+    }
+
+    @Test
+    public void should_able_to_correctly_pre_load_class_tagged_by_PreLoad() {
+        ExpressContainer container = new ExpressContainer("com.expressioc.test");
+
+        List<? extends IC> preLoadedICs = container.getImplementationObjectListOf(IC.class);
+
+        assertThat(preLoadedICs.size(), is(2));
+
+        Class<? extends IC> clazz0 = preLoadedICs.get(0).getClass();
+        Class<? extends IC> clazz1 = preLoadedICs.get(1).getClass();
+
+        assertThat(clazz0.equals(clazz1), is(false));
+        assertThat(clazz0.equals(ICImpl.class) || clazz0.equals(ICImpl2.class), is(true));
+        assertThat(clazz1.equals(ICImpl.class) || clazz1.equals(ICImpl2.class), is(true));
     }
 }
