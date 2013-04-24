@@ -78,13 +78,9 @@ public class ClassUtility {
             Constructor cons = paramClazz.getDeclaredConstructor();
             return cons.newInstance();
         } catch (NoSuchMethodException e) {
-            //TODO
         } catch (InvocationTargetException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         } catch (InstantiationException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         } catch (IllegalAccessException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
 
         return null;
