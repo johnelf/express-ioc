@@ -43,4 +43,12 @@ public class ClassUtilityTest {
         Object param = ClassUtility.assembleParameter(value, byte.class);
         assertThat(param instanceof Byte, is(true));
     }
+
+    @Test
+    public void should_not_use_default_value_when_field_type_is_string_and_not_set() throws Exception {
+        value = "";
+        Object param = ClassUtility.assembleParameter(value, String.class);
+        assertThat(param instanceof String, is(true));
+        assertThat(param.equals(""), is(true));
+    }
 }

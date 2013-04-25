@@ -26,7 +26,6 @@ public class ClassUtility {
         wrapper.add(Long.class);
         wrapper.add(Float.class);
         wrapper.add(Double.class);
-        wrapper.add(Void.class);
         wrapper.add(String.class);
         return wrapper;
     }
@@ -60,7 +59,7 @@ public class ClassUtility {
     }
 
     public static <T> T assembleParameter(String value, Class<T> type) throws Exception {
-        if (value.isEmpty()) {
+        if (value.isEmpty() && type != String.class) {
             value = "0";
         }
 
