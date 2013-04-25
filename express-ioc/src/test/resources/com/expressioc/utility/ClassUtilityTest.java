@@ -8,7 +8,6 @@ import static org.junit.Assert.assertThat;
 public class ClassUtilityTest {
 
     private String value;
-    private int a = 1;
 
     @Test
     public void should_assemble_string_correctly() throws Exception {
@@ -31,4 +30,17 @@ public class ClassUtilityTest {
         assertThat(param instanceof Integer, is(true));
     }
 
+    @Test
+    public void should_add_zero_for_value_if_basic_type_field_not_set() throws Exception {
+        value = "";
+        Object param = ClassUtility.assembleParameter(value, int.class);
+        assertThat(((Integer)param).intValue(), is(0));
+    }
+
+    @Test
+    public void should_add_default_value_if_basic_type_field_not_set() throws Exception {
+        value = "";
+        Object param = ClassUtility.assembleParameter(value, byte.class);
+        assertThat(param instanceof Byte, is(true));
+    }
 }

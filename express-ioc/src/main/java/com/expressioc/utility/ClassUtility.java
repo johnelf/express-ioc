@@ -40,7 +40,6 @@ public class ClassUtility {
         basicTypes.put(short.class, "parseShort");
         basicTypes.put(long.class, "parseLong");
         basicTypes.put(byte.class, "parseByte");
-        basicTypes.put(char.class, "");
         return basicTypes;
     }
 
@@ -61,6 +60,10 @@ public class ClassUtility {
     }
 
     public static <T> T assembleParameter(String value, Class<T> type) throws Exception {
+        if (value.isEmpty()) {
+            value = "0";
+        }
+
         if (WRAPPER_TYPES.contains(type)) {
             return parseObjectFromString(value, type);
         } else if (BASIC_TYPES.containsKey(type)) {
