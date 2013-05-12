@@ -51,4 +51,18 @@ public class ClassUtilityTest {
         assertThat(param instanceof String, is(true));
         assertThat(param.equals(""), is(true));
     }
+
+    @Test
+    public void should_able_to_assemble_character_from_string() throws Exception {
+        value = "h";
+        Object param = ClassUtility.assembleParameter(value, Character.class);
+        assertThat((Character) param, is(new Character('h')));
+    }
+
+    @Test
+    public void should_able_to_assemble_char_from_string() throws Exception {
+        value = "h";
+        Object param = ClassUtility.assembleParameter(value, char.class);
+        assertThat((Character) param, is(new Character('h')));
+    }
 }

@@ -1,5 +1,6 @@
 package com.expressioc.utility;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.ClassPath;
 
@@ -7,52 +8,43 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 
 public class ClassUtility {
-    private static final HashSet<Class<?>> WRAPPER_TYPES = getWrapperTypes();
-    private static final Map<Class, String> BASIC_TYPES = getBasicTypes();
-    private static final Map<Class, Class<?>> BASIC_WRAPPER_MAPPING = getMappings();
+    private static final ImmutableSet<Class<?>> WRAPPER_TYPES = ImmutableSet.<Class<?>>builder()
+            .add(Boolean.class)
+            .add(Boolean.class)
+            .add(Character.class)
+            .add(Byte.class)
+            .add(Short.class)
+            .add(Integer.class)
+            .add(Long.class)
+            .add(Float.class)
+            .add(Double.class)
+            .add(Void.class)
+            .add(String.class)
+            .build();
 
-    private static HashSet<Class<?>> getWrapperTypes() {
-        HashSet<Class<?>> wrapper = new HashSet<Class<?>>();
-        wrapper.add(Boolean.class);
-        wrapper.add(Character.class);
-        wrapper.add(Byte.class);
-        wrapper.add(Short.class);
-        wrapper.add(Integer.class);
-        wrapper.add(Long.class);
-        wrapper.add(Float.class);
-        wrapper.add(Double.class);
-        wrapper.add(String.class);
-        return wrapper;
-    }
+    private static final Map<Class, String> BASIC_TYPES = ImmutableMap.<Class, String>builder()
+            .put(int.class, "parseInt")
+            .put(double.class, "parseDouble")
+            .put(float.class, "parseFloat")
+            .put(boolean.class, "parseBoolean")
+            .put(short.class, "parseShort")
+            .put(long.class, "parseLong")
+            .put(byte.class, "parseByte")
+            .build();
 
-    private static Map<Class, String> getBasicTypes() {
-        Map<Class, String> basicTypes = new HashMap<Class, String>();
-        basicTypes.put(int.class, "parseInt");
-        basicTypes.put(double.class, "parseDouble");
-        basicTypes.put(float.class, "parseFloat");
-        basicTypes.put(boolean.class, "parseBoolean");
-        basicTypes.put(short.class, "parseShort");
-        basicTypes.put(long.class, "parseLong");
-        basicTypes.put(byte.class, "parseByte");
-        return basicTypes;
-    }
-
-    private static Map<Class,Class<?>> getMappings() {
-        Map<Class, Class<?>> mappings = new HashMap<Class, Class<?>>();
-        mappings.put(int.class, Integer.class);
-        mappings.put(double.class, Double.class);
-        mappings.put(float.class, Float.class);
-        mappings.put(boolean.class, Boolean.class);
-        mappings.put(short.class, Short.class);
-        mappings.put(long.class, Long.class);
-        mappings.put(byte.class, Byte.class);
-        return mappings;
-    }
+    private static final Map<Class, Class<?>> BASIC_WRAPPER_MAPPING = ImmutableMap.<Class, Class<?>>builder()
+            .put(int.class, Integer.class)
+            .put(double.class, Double.class)
+            .put(float.class, Float.class)
+            .put(boolean.class, Boolean.class)
+            .put(short.class, Short.class)
+            .put(long.class, Long.class)
+            .put(byte.class, Byte.class)
+            .put(char.class, Character.class)
+            .build();
 
     public static Boolean isBasicType(Class<?> type) {
         return BASIC_TYPES.containsKey(type) || WRAPPER_TYPES.contains(type);
@@ -61,6 +53,10 @@ public class ClassUtility {
     public static <T> T assembleParameter(String value, Class<T> type) throws Exception {
         if (value.isEmpty() && type != String.class) {
             value = "0";
+        }
+
+        if (type.equals(Character.class) || type.equals(char.class)) {
+            return (T) Character.valueOf(value.charAt(0));
         }
 
         if (WRAPPER_TYPES.contains(type)) {

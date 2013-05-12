@@ -3,6 +3,7 @@ package com.expressioc;
 import com.expressioc.exception.AssembleComponentFailedException;
 import com.expressioc.exception.CycleDependencyException;
 import com.expressioc.parameters.Parameter;
+import com.expressioc.utility.ClassUtility;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -20,7 +21,7 @@ public class ConstructorAssembler implements Assembler {
     }
 
     public static <T> Constructor<T>[] getConstructorsSortedByArgsCount(Class<T> clazz) {
-        Constructor<T>[] constructors = (Constructor<T>[])clazz.getDeclaredConstructors();
+        Constructor<T>[] constructors = (Constructor<T>[]) clazz.getDeclaredConstructors();
         Arrays.sort(constructors, new Comparator<Constructor<?>>() {
             @Override
             public int compare(Constructor<?> constructorA, Constructor<?> constructorB) {
@@ -72,31 +73,19 @@ public class ConstructorAssembler implements Assembler {
         }
 
         try {
-            return (T)constructor.newInstance(args.toArray());
+            return (T) constructor.newInstance(args.toArray());
         } catch (Exception e) {
             throw new AssembleComponentFailedException(e);
         }
     }
 
-    private Object getArgFrom(Class type, String value) {
-        if (type.equals(Boolean.class) || type.equals(boolean.class)) {
-            return Boolean.valueOf(value);
-        } else if (type.equals(Byte.class) || type.equals(byte.class)) {
-            return Byte.valueOf(value);
-        } else if (type.equals(Short.class) || type.equals(short.class)) {
-            return Short.valueOf(value);
-        } else if (type.equals(Integer.class) || type.equals(int.class)) {
-            return Integer.valueOf(value);
-        } else if (type.equals(Long.class) || type.equals(long.class)) {
-            return Long.valueOf(value);
-        } else if (type.equals(Float.class) || type.equals(float.class)) {
-            return Float.valueOf(value);
-        } else if (type.equals(Double.class) || type.equals(double.class)) {
-            return Double.valueOf(value);
-        } else if (type.equals(Character.class) || type.equals(char.class)) {
-            return value.toCharArray()[0];
-        } else if (type.equals(String.class)) {
-            return value;
+    private <T> T getArgFrom(Class<T> type, String value) {
+        if (ClassUtility.isBasicType(type)) {
+            try {
+                return ClassUtility.assembleParameter(value, type);
+            } catch (Exception e) {
+                return null;
+            }
         }
 
         return container.getComponent(type);
@@ -104,7 +93,7 @@ public class ConstructorAssembler implements Assembler {
 
 
     private <T> Constructor getConstructorsOfArgsCountEqualTo(Class<T> clazz, int length) {
-        Constructor<T>[] constructors = (Constructor<T>[])clazz.getDeclaredConstructors();
+        Constructor<T>[] constructors = (Constructor<T>[]) clazz.getDeclaredConstructors();
         for (Constructor constructor : constructors) {
             if (constructor.getParameterTypes().length == length) {
                 return constructor;
