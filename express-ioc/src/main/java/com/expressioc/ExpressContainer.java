@@ -162,15 +162,18 @@ public class ExpressContainer implements Container{
         }
     }
 
+    @Override
     public void addComponent(Class clazz, Object instance) {
         checkArgument(clazz.isInstance(instance), "Expect: clazz.isInstance(instance)", clazz, instance);
         instancesMap.put(clazz, instance);
     }
 
+    @Override
     public void addComponent(Class interfaceClazz, Class implClazz) {
         implementationsMap.put(interfaceClazz, implClazz);
     }
 
+    @Override
     public void addComponent(Class interfaceClazz, Class implClazz, Parameter... constructorParams) {
         implementationsMap.put(interfaceClazz, implClazz);
 
