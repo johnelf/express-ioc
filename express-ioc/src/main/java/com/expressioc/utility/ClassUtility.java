@@ -4,18 +4,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.ClassPath;
 
-import java.io.Externalizable;
 import java.io.IOException;
-import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.Map;
 
 public class ClassUtility {
-    public static final ImmutableSet<Class> ignoredInterfaces
-            = ImmutableSet.<Class>of(Serializable.class, Externalizable.class, Cloneable.class, Comparable.class);
 
     private static final ImmutableSet<Class<?>> WRAPPER_TYPES = ImmutableSet.<Class<?>>builder()
             .add(Boolean.class)
@@ -101,21 +96,5 @@ public class ClassUtility {
         } catch (IOException e) {
             return ImmutableSet.of();
         }
-    }
-
-    public static Class getDomainClass(Object value) {
-        Class clazz = value.getClass();
-        if (Proxy.isProxyClass(clazz)) {
-            Class[] interfaces = clazz.getInterfaces();
-            for (Class ifc : interfaces){
-                if (!ignoredInterfaces.contains(ifc)) {
-                    return ifc;
-                }
-            }
-        } else if (clazz.getName().lastIndexOf('$') != -1 && clazz.getDeclaringClass() == null) {
-            clazz = clazz.getSuperclass();
-        }
-
-        return clazz;
     }
 }
